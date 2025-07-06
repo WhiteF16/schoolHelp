@@ -5,7 +5,7 @@ const jwtConfig = require('../config/jwtConfig');
 // 生成JWT,发生在邮箱和密码匹配之后
 const generateJWT = (user) => {
   const payload = {
-    userId: user.id,
+    userId: user.user_id,
     email: user.email,
   };//jwt负载
 

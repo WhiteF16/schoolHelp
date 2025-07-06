@@ -25,11 +25,15 @@ const storageDisk = multer.diskStorage({
     cb(null, path.join(__dirname, '../uploads/img'));
   },
   filename: (req, file, cb) => {
-    // 设置上传文件的文件名，避免重复
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname); // 获取文件扩展名
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext); // 设置文件名
-  }
+    const userId = req.user?.userId;
+    const postId = req.body.postId;
+    const timestamp = Date.now(); 
+    const fileIndex = req.files?.length + 1 || 1;// 当前文件序号
+    const ext = path.extname(file.originalname); // 文件扩展名
+
+    // 生成格式：用户ID_帖子ID_时间戳_序号.扩展名
+    const filename = `${userId}_${postId}_${timestamp}_${fileIndex}${ext}`;
+    cb(null, filename);}
 })
 
 // 创建 multer 实例，使用磁盘存储

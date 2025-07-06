@@ -1,128 +1,56 @@
 const authServices = require('../services/authServices');
-
-exports.login = async (req, res) => {
-  const {email,password} = req.body;
-  console.log("email:"+email);
-  if (!email) {
-    return res.status(400).json({
-      success: false,
-      message: "请填写邮箱",
-    });
-  }
-  if (!password) {
-    return res.status(400).json({
-      success: false,
-      message: "请填写密码",
-    });
-  }
-
+const { loginSchema, registerSchema, verificationSchema, resetPwdSchema }=require('../validators/authValidator');
+exports.userLogin = async (req, res,next) => {
   try {
+    const {error,value}=loginSchema.validate(req.body,{abortEarly: true});
+    if (error) return next({ status: 400, message: error.details[0].message });
 
-    // 验证密码
-    const result = await authServices.authValidPwd(email, password);
+    const {email,password} = value;
+      // 验证密码
+    const result = await authServices.userLogin (email, password);
 
     return res.status(200).json({
       success: true,
       message: '登录成功',
       token: result.token,
     });
-  } catch (error) {
-    const statusCode = error.status || 500;
-    return res.status(statusCode).json({
-      success: false,
-      message: error.message || '登录失败',
-    });
-  }
+    } catch (error) {
+      next(error);
+    }
 };
 
 
-
-exports.register = async (req, res) => {
-  const {email,password,code } = req.body;
-  if (!email) {
-    return res.status(400).json({
-      success: false,
-      message: "请填写邮箱",
-    });
-  }
-  if (!password) {
-    return res.status(400).json({
-      success: false,
-      message: "请填写密码",
-    });
-  }
-  if (!code) {
-    return res.status(400).json({
-      success: false,
-      message: "请填写验证码",
-    });
-  }
+exports.userRegister = async (req, res,next) => {
   try {
-    // 调用验证码验证服务
-    await authServices.verifyVerificationCode(email, code); // 服务调用
-    const result = await authServices.authRegister(email, password);
+    const {error,value}=registerSchema.validate(req.body);
+    if (error) return next({ status: 400, message: error.details[0].message });
+    const {email,password,code } = value;
+    await authServices.verifyVerificationCode(email, code);
+    await authServices.userRegister(email, password);
 
     return res.status(200).json({
       success: true,
-      message: result.message,
+      message: '注册成功',
     });
   } catch (error) {
-    const statusCode = error.status || 500;
-
-    return res.status(statusCode).json({
-      success: false,
-      message: error.message || '注册失败',
-    });
+    next(error);
   }
 };
 
-
-exports.updateProfile = async (req, res) => {
-  console.log('JWT Payload:', req.user);  // 打印 req.user，查看是否包含解码后的用户信息
-
-  const userId = req.user?.userId;  // 安全访问 userId，避免 undefined 错误
-
-  if (!userId) {
-    return res.status(401).json({ message: '未找到用户ID' });  // 如果没有 userId，返回错误
-  }
-
-  const { idName, gender } = req.body;
-  const img = req.file;
-
-  try {
-    // 调用 authServices 的 authUpdate 方法更新用户信息
-    const response = await authServices.authUpdate(userId, idName, gender, img);
-    return res.status(200).json(response);
-   
-    
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: '更新失败',
-      error: error.message
-    });
-  }
-};
-
-exports.generateVerificationCode=async(req,res)=>{
-  const email=req.body.email;
-  if(!email){
-    return res.status(400).json({
-      success:false,
-      message:"请填写邮箱"
-    })
-  }
+exports.generateVerificationCode=async(req,res,next)=>{
   try{
-    const response=await authServices.generateVerificationCode(email);
+    const {error,value} = verificationSchema.validate(req.body);
+    if (error) return next({ status: 400, message: error.details[0].message });
+
+    const { email } =value;
+
+    await authServices.generateVerificationCode(email);
     return res.status(200).json({
       success:true,
-      message:response.message
+      message:'验证码已发送'
     })
   }catch(error){
-    return res.status(500).json({
-      success:false,
-      message:error.message
-    })
+    next(error)
   }
 }
 
@@ -148,30 +76,13 @@ exports.generateVerificationCode=async(req,res)=>{
   }
 };*/
 
-exports.remakePwd=async(req,res)=>{
-  const {email,password,code}=req.body;
+exports.remakePwd=async(req,res,next)=>{;
+   try{
+    const { error } = resetPwdSchema.validate(req.body);
+    if (error) return next({ status: 400, message: error.details[0].message });
 
-  console.log('JWT Payload:', req.user);  // 打印 req.user，查看是否包含解码后的用户信息
-  
-  if (!email) {
-    return res.status(400).json({
-      success: false,
-      message: "请填写邮箱",
-    });
-  }
-  if (!password) {
-    return res.status(400).json({
-      success: false,
-      message: "请填写密码",
-    });
-  }
-  if (!code) {
-    return res.status(400).json({
-      success: false,
-      message: "请填写验证码",
-    });
-  }
-  try{
+    const { email, password, code } = req.body;
+
     await authServices.verifyVerificationCode(email, code);
     const result=await authServices.remakePwd(email,password);
     return res.status(200).json({
@@ -180,10 +91,6 @@ exports.remakePwd=async(req,res)=>{
     });
 
   }catch(error){
-    const statusCode = error.status || 500;
-    return res.status(statusCode).json({
-      success: false,
-      message: error.message || '重置密码失败'
-    })
+    next(error)
   }
 }

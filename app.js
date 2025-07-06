@@ -33,9 +33,9 @@ app.use('/mine',mineRouter)
 app.use('/',fileRouter)
 
 
-/*app.listen(3000, () => {  
+app.listen(3000, () => {  
    console.log('Server is running at http://localhost:3000');   
-});*/
-app.listen(8081, '172.20.10.13', () => {
-  console.log(`Server running on 172.20.10.13:${8081}`);
- });
+});
+/*app.listen(8081, 'localhost', () => {
+  console.log(`Server running on localhost:${8081}`);
+ });*/

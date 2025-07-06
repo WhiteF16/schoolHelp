@@ -1,5 +1,7 @@
 const db = require('../config/dbConfig');  // 连接数据库
 const oQ=require('../db/queries/objectsQueries');  
+const fs = require('fs');
+const path = require('path');
   
   //加载我的失物招领详情界面
   exports.getLostFound = async (objectId) => {
@@ -10,8 +12,7 @@ const oQ=require('../db/queries/objectsQueries');
       if (error.status) {
         throw error;
       }
-      console.log(error.message);
-      throw { status: 500, message: '打开失物招领的详情界面时发生错误' };
+      throw { status: 500, message: '打开失物招领的详情界面时发生错误'+error.message };
     }
   };
 
@@ -44,7 +45,13 @@ exports.getContact= async (objectId) => {
 };
 
   //上传失物招领
-  exports.sendLostFound= async (userId,title,content,createdAt,contact) => {
+  exports.sendLostFound= async (userId,title,content,createdAt,contact,pictures) => {
+    const picturesFile=[
+        pictures?.picture,
+        pictures?.picture2,
+        pictures?.picture3
+    ].filter(Boolean);
+   
     try {
       const insertResult=await db.query(oQ.sendLostFound, [userId,title,content,createdAt,contact,pictures.picture, pictures.picture2, pictures.picture3]);
       if (insertResult.rowCount === 0) {
@@ -53,11 +60,17 @@ exports.getContact= async (objectId) => {
 
       return;
     } catch (error) {
+      console.log(picturesFile);
+      await Promise.all(
+                files.map(file => 
+                  fs.unlink(path.join(__dirname, '../uploads/img', path.basename(file.path)))
+                    .catch(() => {}) // 仍然保留错误捕获
+                )
+              );
       if (error.status) {
         throw error;
       }
-      console.log(error.message);
-      throw { status: 500, message: '创建失物招领时发生错误' };
+      throw { status: 500, message: '创建失物招领时发生错误' +error.message};
     }
   };
 
